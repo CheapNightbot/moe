@@ -1,11 +1,17 @@
 from PIL import Image, ImageDraw, ImageFont
 
-BG_IMG = "./moe/assets/welcome.png"
-USER_PFP_IMG = "./moe/assets/user_pfp.png"
-GREET = "./moe/assets/welcome_to_the_sever.png"
 
 
-def create_banner(user_name):
+def create_banner(user_name, leave=False):
+
+    BG_IMG = "./moe/assets/welcome.png"
+    USER_PFP_IMG = "./moe/assets/user_pfp.png"
+    GREET = "./moe/assets/welcome_to_the_sever.png"
+
+    if leave:
+        BG_IMG = "./moe/assets/goodbye.png"
+        GREET = "./moe/assets/a_good_bye.png"
+
     with Image.open(BG_IMG).convert("RGBA") as img:
         pfp = Image.open(USER_PFP_IMG).convert("RGBA")
         pfp = pfp.resize((480, 480))
@@ -20,7 +26,7 @@ def create_banner(user_name):
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype("./moe/assets/FunnelDisplay-Regular.ttf", 69)
 
-        draw.text((280, 850), user_name, (219, 82, 117), font=font)
+        draw.text((222, 850), user_name, (219, 82, 117), font=font)
         img.save(GREET, format="PNG")
 
     return GREET
