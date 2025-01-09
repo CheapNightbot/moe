@@ -1,4 +1,4 @@
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 BG_IMG = "./moe/assets/welcome.png"
 USER_PFP_IMG = "./moe/assets/user_pfp.png"
@@ -9,10 +9,15 @@ def create_banner(user_name):
         pfp = Image.open(USER_PFP_IMG).convert("RGBA")
         pfp = pfp.resize((480, 480))
 
+        mask = Image.new("L", pfp.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0, 480, 480), fill=255)
+        pfp.putalpha(mask)
+
         img.paste(pfp, (275, 255), pfp)
 
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype("./moe/assets/FunnelDisplay-Regular.ttf", 69)
 
         draw.text((280, 850), user_name, (219, 82, 117), font=font)
-        img.save("./moe/assets/wel-come.png")
+        img.save("./moe/assets/welcome_to_the_sever.png")
