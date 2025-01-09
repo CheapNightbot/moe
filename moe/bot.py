@@ -42,6 +42,7 @@ async def on_message(msg: discord.Message):
         return
 
     if client.user.mentioned_in(msg):
+        await msg.author.display_avatar.save("./moe/assets/user_pfp.png")
         await msg.reply("<a:moe:1326858320409006145> ?", mention_author=True)
 
 def main():
