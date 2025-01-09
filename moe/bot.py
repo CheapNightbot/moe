@@ -43,10 +43,27 @@ async def on_message(msg: discord.Message):
         return
 
     if client.user.mentioned_in(msg):
-        await msg.author.display_avatar.save("./moe/assets/user_pfp.png")
-        create_banner(msg.author.display_name)
-
         await msg.reply("<a:moe:1326858320409006145> ?", mention_author=True)
+
+
+@client.event
+async def on_memeber_join(member: discord.Member):
+    guild = member.guild
+
+    if guild.system_channel:
+        await member.display_avatar.save("./moe/assets/user_pfp.png")
+        img = discord.File(
+            create_banner(member.author.display_name),
+            filename="welcome_to_the_server.png",
+        )
+
+        embed = discord.Embed(
+            title=f"Heyo {member.mention} ~ <:haro:1326811765928890450> ! ",
+            description=f"Welcome to **{guild.name}** !\n\nPlease read & agree to the <#1191391912372994128> in order to gain access to the full server.",
+        )
+        embed.set_image(url="attachment://welcome_to_the_server.png")
+
+        await guild.system_channel.send(file=img, embed=embed)
 
 
 def main():

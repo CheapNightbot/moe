@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 BG_IMG = "./moe/assets/welcome.png"
 USER_PFP_IMG = "./moe/assets/user_pfp.png"
+GREET = "./moe/assets/welcome_to_the_sever.png"
 
 
 def create_banner(user_name):
@@ -20,4 +21,6 @@ def create_banner(user_name):
         font = ImageFont.truetype("./moe/assets/FunnelDisplay-Regular.ttf", 69)
 
         draw.text((280, 850), user_name, (219, 82, 117), font=font)
-        img.save("./moe/assets/welcome_to_the_sever.png")
+        img.save(GREET, format="PNG")
+
+    return GREET
