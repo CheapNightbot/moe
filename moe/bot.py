@@ -70,7 +70,7 @@ class MyClient(discord.Client):
                     await member.remove_roles(role)
 
 
-activity = discord.Activity(name="Conversations..", type=discord.ActivityType.listening)
+activity = discord.Activity(name="萌え萌えキュン ♡ (⸝⸝> ᴗ•⸝⸝)", type=discord.ActivityType.streaming)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
