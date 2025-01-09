@@ -6,6 +6,7 @@ load_dotenv()
 
 import discord
 from discord import app_commands
+from .greet import create_banner
 
 TOKEN = os.getenv("TOKEN")
 
@@ -43,7 +44,10 @@ async def on_message(msg: discord.Message):
 
     if client.user.mentioned_in(msg):
         await msg.author.display_avatar.save("./moe/assets/user_pfp.png")
+        create_banner(msg.author.display_name)
+
         await msg.reply("<a:moe:1326858320409006145> ?", mention_author=True)
+
 
 def main():
     client.run(token=TOKEN, log_handler=None)
