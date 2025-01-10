@@ -21,7 +21,7 @@ def create_banner(user_name, leave=False):
         draw.ellipse((0, 0, 480, 480), fill=255)
         pfp.putalpha(mask)
 
-        img.paste(pfp, (275, 255), pfp)
+        img.paste(pfp, (272, 252), pfp)
 
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype("./moe/assets/FunnelDisplay-Regular.ttf", 69)
