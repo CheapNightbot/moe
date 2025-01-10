@@ -36,6 +36,11 @@ class MyClient(discord.Client):
             await member.display_avatar.save("./moe/assets/user_pfp.png")
             img = discord.File(create_banner(member.display_name))
             msg = f"Heyo {member.mention} ~ <:haro:1326811765928890450> Welcome to **{guild.name}** !\n\nPlease read & agree to the <#1191391912372994128> in order to gain access to the full server."
+
+            if member.bot:
+                msg = f"Beep boob, boop beep ~ {member.mention} just appeared ! <:hallo:1327313451999035415>"
+                await member.add_roles(guild.get_role(1327308523167809616))
+
             await guild.system_channel.send(msg, file=img)
 
     async def on_member_remove(self, member: discord.Member):
@@ -70,7 +75,7 @@ class MyClient(discord.Client):
                     await member.remove_roles(role)
 
 
-activity = discord.Activity(name="萌え萌えキュン ♡ (⸝⸝> ᴗ•⸝⸝)", type=discord.ActivityType.streaming)
+activity = discord.Activity(name="萌え萌えキュン ♡(⸝⸝> ᴗ•⸝⸝)", type=discord.ActivityType.streaming)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
