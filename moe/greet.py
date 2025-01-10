@@ -26,7 +26,10 @@ def create_banner(user_name, leave=False):
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype("./moe/assets/FunnelDisplay-Regular.ttf", 69)
 
-        draw.text((222, 850), user_name, (219, 82, 117), font=font)
+        text_width = draw.textlength(user_name, font=font)
+        x = (img.width - text_width) / 2
+
+        draw.text((x, 850), user_name, (219, 82, 117), font=font)
         img.save(GREET, format="PNG")
 
     return GREET
