@@ -55,8 +55,13 @@ class MyClient(discord.Client):
     async def on_raw_reaction_add(self, payload):
         if payload.message_id == self.role_msg_id:
             guild = self.get_guild(payload.guild_id)
-            role_id = self.reaction_roles.get(payload.emoji.name)
 
+            if payload.emoji.name != "✅":
+                msg = guild.get_channel(payload.channel_id).get_partial_message(payload.message_id)
+                await msg.remove_reaction(payload.emoji.name, guild.get_member(payload.user_id))
+                return
+
+            role_id = self.reaction_roles.get(payload.emoji.name)
             if role_id:
                 role = guild.get_role(role_id)
                 member = guild.get_member(payload.user_id)
