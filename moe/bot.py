@@ -19,8 +19,17 @@ class MyClient(discord.Client):
         self.reaction_roles = {"✅": 1195788288477376673}
 
     async def on_ready(self):
-        print(f"Ready ~ !! Logged in as {client.user.name}.")
-        print("----------------------------")
+        print(f"Ready ~ !! Logged in as {self.user.name}.")
+        print("\n----------------------------")
+        print(f"{self.user.name} GUILDS:\n")
+        guild_count = 0
+
+        for guild in self.guilds:
+            guild_count += 1
+            print(f"{guild_count}. {guild.name})")
+
+        print(f"\n{self.user.name} is in {guild_count} guild(s).")
+        print("\n----------------------------\n")
 
     async def on_message(self, msg: discord.Message):
         if msg.author.id == self.user.id:
