@@ -1,5 +1,5 @@
-from src.bot import main
-from src.logger import log
+from moe.bot import main
+from moe.logger import log
 
 if __name__ == '__main__':
     log()
