@@ -26,7 +26,7 @@ class MyClient(discord.Client):
 
         for guild in self.guilds:
             guild_count += 1
-            print(f"{guild_count}. {guild.name})")
+            print(f"{guild_count}. {guild.name}")
 
         print(f"\n{self.user.name} is in {guild_count} guild(s).")
         print("\n----------------------------\n")
