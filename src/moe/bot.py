@@ -8,6 +8,7 @@ import discord
 from discord import app_commands
 
 from .greet import create_banner
+from .logger import log
 
 TOKEN = os.getenv("TOKEN")
 
@@ -97,4 +98,5 @@ client = MyClient(intents=intents, activity=activity)
 
 
 def main():
+    log()
     client.run(token=TOKEN, log_handler=None)
