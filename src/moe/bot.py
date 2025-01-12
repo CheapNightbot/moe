@@ -68,7 +68,8 @@ class MyClient(discord.Client):
 
             if payload.emoji.name != "✅":
                 msg = guild.get_channel(payload.channel_id).get_partial_message(payload.message_id)
-                await msg.remove_reaction(payload.emoji.name, guild.get_member(payload.user_id))
+                emoji = self.get_emoji(payload.emoji.id) if payload.emoji.id else payload.emoji.name
+                await msg.remove_reaction(emoji, guild.get_member(payload.user_id))
                 return
 
             role_id = self.reaction_roles.get(payload.emoji.name)
