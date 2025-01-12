@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
-
+from langdetect import detect
 
 
 def create_banner(user_name, leave=False):
@@ -24,7 +24,18 @@ def create_banner(user_name, leave=False):
         img.paste(pfp, (272, 252), pfp)
 
         draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype("./moe/assets/FunnelDisplay-Regular.ttf", 69)
+
+        font_en = ImageFont.truetype("./static/fonts/Murecho/static/Murecho-Regular.ttf", 69)
+        font_jp = ImageFont.truetype("./static/fonts/Kaisei_Decol/KaiseiDecol-Regular.ttf", 75)
+        font_kr = ImageFont.truetype("./static/fonts/Dongle/Dongle-Regular.ttf", 120)
+
+        username_lang = detect(user_name)
+        if username_lang == "ja":
+            font = font_jp
+        elif username_lang == "ko":
+            font = font_kr
+        else:
+            font = font_en
 
         text_width = draw.textlength(user_name, font=font)
         x = (img.width - text_width) / 2

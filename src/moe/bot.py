@@ -19,6 +19,9 @@ class MyClient(discord.Client):
         self.role_msg_id = 1326954222339489885
         self.reaction_roles = {"✅": 1195788288477376673}
 
+    async def setup_hook(self):
+        await self.tree.sync()
+
     async def on_ready(self):
         print(f"Ready ~ !! Logged in as {self.user.name}.")
         print("\n----------------------------")
@@ -96,6 +99,11 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 client = MyClient(intents=intents, activity=activity)
+
+
+@client.tree.command()
+@app_commands.describe()
+async def 
 
 
 def main():
