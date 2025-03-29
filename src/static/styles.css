@@ -1,18 +1,118 @@
 @font-face {
-  font-family: Murecho;
-  src: url(./fonts/Murecho/Murecho-VariableFont_wght.ttf);
+    font-family: Murecho;
+    src: url(./fonts/Murecho/Murecho-VariableFont_wght.ttf);
 }
 
 @font-face {
-  font-family: "Kaisei Decol";
-  src: url(./fonts/Kaisei_Decol/KaiseiDecol-Bold.ttf);
+    font-family: "Kaisei Decol";
+    src: url(./fonts/Kaisei_Decol/KaiseiDecol-Bold.ttf);
 }
 
 @font-face {
-  font-family: Dongle;
-  src: url(./fonts/Dongle/Dongle-Regular.ttf);
+    font-family: Dongle;
+    src: url(./fonts/Dongle/Dongle-Regular.ttf);
+}
+
+:root {
+    --primary-color: #FED7CC;
+    --secondary-color: #F2C4B3;
+    --accent-color: #F2EDA2;
+    --seconday-accent-color: #FFDBCF;
+    --dark-color: #8C7A8A;
+    --dark-color-trans: #8c7a8ac4;
+    --light-color: #ffeeee;
+    --primary-text: #544954;
+    --default-transition: all .3s ease-in-out;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  font-family: "Kaisei Decol", sans-serif;
+    min-height: 100dvh;
+    background: var(--primary-color);
+    color: var(--primary-text);
+    font-family: "Kaisei Decol", sans-serif;
+}
+
+nav {
+    background-color: var(--dark-color-trans);
+    padding: 1rem 4rem;
+    backdrop-filter: blur(6px);
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+nav ul {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    list-style-type: none;
+}
+
+nav a,
+nav a:visited {
+    color: var(--light-color);
+    text-decoration: none;
+}
+
+nav a:hover {
+    color: var(--secondary-color);
+}
+
+a,
+a:visited {
+    color: var(--primary-text);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--dark-color);
+}
+
+.primary-btn {
+    color: var(--dark-color);
+    background: var(--secondary-color);
+    padding: .8rem;
+    cursor: pointer;
+    border: none;
+    border-radius: .47rem;
+    user-select: none;
+    transition: var(--default-transition);
+}
+
+.primary-btn:hover {
+    transform: scale(1.05);
+    transition: var(--default-transition);
+}
+
+main {
+    flex: 1;
+}
+
+footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 1.5rem 2rem;
+    width: 100%;
+}
+
+footer ul {
+    list-style-type: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    gap: 1rem;
+}
+
+@media (max-width: 600px) {
+    nav ul {
+        flex-direction: column;
+    }
 }
