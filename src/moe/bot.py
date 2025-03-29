@@ -101,11 +101,6 @@ intents.members = True
 client = MyClient(intents=intents, activity=activity)
 
 
-@client.tree.command()
-@app_commands.describe()
-async def 
-
-
 def main():
     log()
     client.run(token=TOKEN, log_handler=None)
