@@ -12,18 +12,26 @@
 </head>
 
 <body>
+    <nav>
+        <ul>
+            <li><a href="/">萌え萌えキュン (⸝⸝> ᴗ•⸝⸝)</a></li>
+            <li>
+                <a href="https://discord.com/oauth2/authorize?client_id=1326853669089574952" target="_blank">
+                    <button class="primary-btn">Add to Server</button>
+                </a>
+            </li>
+        </ul>
+    </nav>
 
     <main>
         {% block main %}{% endblock %}
     </main>
 
     <footer>
-        <div>&copy; 2025 All rights reserved.</div>
-        <div id="footer-socials">
-            <div>Discord</div>
-            <div">GitHub
-        </div>
-        </div>
+        <ul>
+            <li>&copy; {{ year }} All rights reserved.</li>
+            <li><a href="https://github.com/CheapNightbot/moe" target="_blank">GitHub</a></li>
+        </ul>
     </footer>
 
 </body>
