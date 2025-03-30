@@ -1,0 +1,88 @@
+body {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: linear-gradient(135deg, #FED7CC, #F2C4B3);
+    color: #544954;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 90%;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: #F28A8A;
+}
+
+header p {
+    font-size: 1.2rem;
+    color: #8C7A8A;
+}
+
+.stats {
+    margin: 2rem 0;
+    user-select: none;
+}
+
+.stats h2 {
+    font-size: 1.8rem;
+    color: #F28A8A;
+}
+
+.stats p {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+}
+
+.invite .primary-btn {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    background: #F28A8A;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.invite .primary-btn:hover {
+    transform: scale(1.05);
+}
+
+footer {
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: #8C7A8A;
+}
+
+footer p a {
+    color: #F28A8A;
+    text-decoration: none;
+    margin: 0 0.5rem;
+}
+
+footer p a:hover {
+    text-decoration: underline;
+}
+
+.gif-container {
+    margin: 1rem 0;
+}
+
+.gif-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}

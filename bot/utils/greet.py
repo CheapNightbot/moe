@@ -4,13 +4,13 @@ from langdetect import detect
 
 def create_banner(user_name, leave=False):
 
-    BG_IMG = "./moe/assets/welcome.png"
-    USER_PFP_IMG = "./moe/assets/user_pfp.png"
-    GREET = "./moe/assets/welcome_to_the_sever.png"
+    BG_IMG = "./assets/welcome.png"
+    USER_PFP_IMG = "./assets/user_pfp.png"
+    GREET = "./assets/welcome_to_the_sever.png"
 
     if leave:
-        BG_IMG = "./moe/assets/goodbye.png"
-        GREET = "./moe/assets/a_good_bye.png"
+        BG_IMG = "./assets/goodbye.png"
+        GREET = "./assets/a_good_bye.png"
 
     with Image.open(BG_IMG).convert("RGBA") as img:
         pfp = Image.open(USER_PFP_IMG).convert("RGBA")
@@ -25,9 +25,15 @@ def create_banner(user_name, leave=False):
 
         draw = ImageDraw.Draw(img)
 
-        font_en = ImageFont.truetype("./static/fonts/Murecho/static/Murecho-Regular.ttf", 69)
-        font_jp = ImageFont.truetype("./static/fonts/Kaisei_Decol/KaiseiDecol-Regular.ttf", 75)
-        font_kr = ImageFont.truetype("./static/fonts/Dongle/Dongle-Regular.ttf", 120)
+        font_en = ImageFont.truetype(
+            "./assets/fonts/Murecho/static/Murecho-Regular.ttf", 69
+        )
+        font_jp = ImageFont.truetype(
+            "./assets/fonts/Kaisei_Decol/KaiseiDecol-Regular.ttf", 75
+        )
+        font_kr = ImageFont.truetype(
+            "./assets/fonts/Dongle/Dongle-Regular.ttf", 120
+        )
 
         username_lang = detect(user_name)
         if username_lang == "ja":

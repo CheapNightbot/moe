@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='moe.gif') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to moe Bot ♡</h1>
+            <p>萌え萌えキュン ♡ (⸝⸝> ᴗ•⸝⸝)</p>
+            <div class="gif-container">
+                <img src="{{ url_for('static', filename='moe.gif') }}" alt="Moe Bot GIF">
+            </div>
+        </header>
+
+        <main>
+            <div class="stats">
+                <h2>Bot Statistics</h2>
+                <p>Guilds: <span id="guild-count">{{ guild_count }}</span></p>
+                <p>Uptime: <span id="uptime"></span></p>
+            </div>
+
+            <div class="invite">
+                <a href="https://discord.com/oauth2/authorize?client_id=1326853669089574952" target="_blank" class="primary-btn">
+                    Add moe to Your Server
+                </a>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; {{ year }} moe. All rights reserved.</p>
+            <p> <a href="https://github.com/CheapNightbot/moe" target="_blank">GitHub</a> | <a
+                    href="https://discord.gg/PqmUkXYNgh" target="_blank">Support Server</a> </p>
+        </footer>
+    </div>
+
+    <script>
+        let uptimeSeconds = 0; // Initialize uptime in seconds
+
+        // Function to format uptime as HH:MM:SS
+        function formatUptime(seconds) {
+            const hours = String(Math.floor(seconds / 3600)).padStart(2, "0");
+            const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+            const secs = String(seconds % 60).padStart(2, "0");
+            return `${hours}:${minutes}:${secs}`;
+        }
+
+        // Real-time uptime counter
+        function updateUptime() {
+            uptimeSeconds += 1; // Increment uptime by 1 second
+            document.getElementById("uptime").textContent = formatUptime(uptimeSeconds);
+        }
+
+        // Fetch initial uptime and guild count
+        async function fetchInitialStats() {
+            try {
+                const response = await fetch("/api/stats");
+                const data = await response.json();
+
+                // Set initial uptime and guild count
+                uptimeSeconds = data.uptime_seconds;
+                document.getElementById("guild-count").textContent = data.guild_count;
+                document.getElementById("uptime").textContent = formatUptime(uptimeSeconds);
+            } catch (error) {
+                console.error("Failed to fetch initial stats:", error);
+            }
+        }
+
+        // Fetch guild count periodically
+        async function fetchGuildCount() {
+            try {
+                const response = await fetch("/api/stats");
+                const data = await response.json();
+                document.getElementById("guild-count").textContent = data.guild_count;
+            } catch (error) {
+                console.error("Failed to fetch guild count:", error);
+            }
+        }
+
+        // Start the uptime counter and fetch initial stats
+        fetchInitialStats();
+        setInterval(updateUptime, 1000); // Update uptime every second
+        setInterval(fetchGuildCount, 30000); // Fetch guild count every 30 seconds
+    </script>
+</body>
+
+</html>
