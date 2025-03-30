@@ -126,8 +126,14 @@ class MyClient(discord.Client):
                         },
                     },
                     "reaction_roles": {},
+                    "honey_pot": {},  # <-- Initialize honey pot config as empty
                 }
                 save_config(guild_config)
+            else:
+                # If the guild is already in the config but missing honey_pot, add it.
+                if "honey_pot" not in guild_config[str(guild.id)]:
+                    guild_config[str(guild.id)]["honey_pot"] = {}
+                    save_config(guild_config)
             await self.notify_missing_channels(guild)
 
         # Update guild count immediately on startup
@@ -157,8 +163,13 @@ class MyClient(discord.Client):
                     },
                 },
                 "reaction_roles": {},
+                "honey_pot": {},  # <-- Initialize honey pot config on guild join
             }
             save_config(guild_config)
+        else:
+            if "honey_pot" not in guild_config[str(guild.id)]:
+                guild_config[str(guild.id)]["honey_pot"] = {}
+                save_config(guild_config)
         await self.notify_missing_channels(guild)
 
     async def notify_missing_channels(self, guild: discord.Guild):
@@ -284,6 +295,55 @@ class MyClient(discord.Client):
             # Remove empty channel entries.
             if not guild_config[guild_id]["reaction_roles"][channel_key]:
                 del guild_config[guild_id]["reaction_roles"][channel_key]
+            save_config(guild_config)
+
+    async def on_message(self, message: discord.Message):
+        # ...existing code...
+        if message.author.bot or not message.guild:
+            return
+        honey = guild_config.get(str(message.guild.id), {}).get("honey_pot")
+        if honey and message.channel.id == honey.get("channel_id"):
+            allow_owner = honey.get("allow_owner", False)
+            if allow_owner and message.author.id == message.guild.owner_id:
+                return
+            try:
+                # Delete offending message
+                await message.delete()
+                # Ban the user
+                await message.guild.ban(message.author, reason="Honey pot triggered")
+                # Forward message details to moderation channel if configured
+                mod_channel_id = guild_config.get(str(message.guild.id), {}).get(
+                    "honey_pot_mod_channel"
+                )
+                if mod_channel_id:
+                    mod_channel = self.get_channel(mod_channel_id)
+                    if mod_channel:
+                        embed = Embed(
+                            title="Honey Pot Alert",
+                            description=(
+                                f"User {message.author.mention} triggered the honey pot in "
+                                f"{message.channel.mention}."
+                            ),
+                            color=0xFF0000,
+                        )
+                        embed.add_field(
+                            name="Message Content",
+                            value=message.content or "No content",
+                            inline=False,
+                        )
+                        embed.set_footer(
+                            text=f"User ID: {message.author.id} | Channel ID: {message.channel.id}"
+                        )
+                        await mod_channel.send(embed=embed)
+            except Exception as e:
+                print(f"Error handling honey pot for {message.author}: {e}")
+        # ...existing code...
+
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+        config = guild_config.get(str(channel.guild.id), {})
+        honey = config.get("honey_pot")
+        if honey and honey.get("channel_id") == channel.id:
+            config["honey_pot"] = {}  # Reset honey pot config instead of removing it
             save_config(guild_config)
 
 
@@ -794,5 +854,49 @@ async def add_reaction_role(
 
     await interaction.followup.send(
         f"Successfully added reaction role: {emoji} ➡️ {role.mention} on message ID {message_id} in {channel.mention}.",
+        ephemeral=True,
+    )
+
+
+@client.tree.command(
+    name="honey_pot",
+    description="Setup channel to trap compromised accounts. Sending message there will get them banned immediately.",
+)
+@app_commands.describe(
+    channel="Select a public text channel for honey pot deployment",
+    allow_owner="Allow the server owner to send messages in this channel (default: not allowed)",
+)
+@app_commands.check(owner_only)
+async def honey_pot(
+    interaction: discord.Interaction,
+    channel: discord.TextChannel,
+    allow_owner: bool = False,
+):
+    # Check if the selected channel is public (i.e., @everyone can send messages)
+    perms = channel.permissions_for(interaction.guild.default_role)
+    if not perms.send_messages:
+        await interaction.response.send_message(
+            "The selected channel is not public (everyone cannot send messages).",
+            ephemeral=True,
+        )
+        return
+    guild_id = str(interaction.guild.id)
+    if guild_id not in guild_config:
+        guild_config[guild_id] = {}
+    guild_config[guild_id]["honey_pot"] = {
+        "channel_id": channel.id,
+        "allow_owner": allow_owner,
+    }
+    save_config(guild_config)
+    try:
+        await channel.send(
+            "# <a:warn:1355807146851176519> DO NOT POST HERE <a:warn:1355807146851176519>\n\n\n"
+            "This channel is a honeypot for compromised accounts. If you send anything here, "
+            "you WILL BE BANNED immediately.\n\nYes, I AM SERIOUS ~ <:ganyu_huh:1355807607075373056> !!"
+        )
+    except Exception as e:
+        print(f"Error sending message in honey pot channel: {e}")
+    await interaction.response.send_message(
+        f"Honey pot channel set to {channel.mention}.",
         ephemeral=True,
     )

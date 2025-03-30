@@ -14,6 +14,7 @@
                 "bot": "Beep boop-... ~ {member.mention} just disappeared ! <:that_hurts:1355670982190432296>"
             }
         },
-        "reaction_roles": {}
+        "reaction_roles": {},
+        "honey_pot": {}
     }
 }
