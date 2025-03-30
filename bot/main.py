@@ -307,7 +307,7 @@ class MyClient(discord.Client):
             if allow_owner and message.author.id == message.guild.owner_id:
                 return
             try:
-                # Delete offending message
+                # Delete message
                 await message.delete()
                 # Ban the user
                 await message.guild.ban(message.author, reason="Honey pot triggered")
@@ -865,14 +865,15 @@ async def add_reaction_role(
 @app_commands.describe(
     channel="Select a public text channel for honey pot deployment",
     allow_owner="Allow the server owner to send messages in this channel (default: not allowed)",
+    mod_channel="Optional: Select a channel to receive honey pot alerts",
 )
 @app_commands.check(owner_only)
 async def honey_pot(
     interaction: discord.Interaction,
     channel: discord.TextChannel,
     allow_owner: bool = False,
+    mod_channel: discord.TextChannel = None,
 ):
-    # Check if the selected channel is public (i.e., @everyone can send messages)
     perms = channel.permissions_for(interaction.guild.default_role)
     if not perms.send_messages:
         await interaction.response.send_message(
@@ -886,6 +887,7 @@ async def honey_pot(
     guild_config[guild_id]["honey_pot"] = {
         "channel_id": channel.id,
         "allow_owner": allow_owner,
+        "honey_pot_mod_channel": mod_channel.id if mod_channel else None,
     }
     save_config(guild_config)
     try:
@@ -897,6 +899,6 @@ async def honey_pot(
     except Exception as e:
         print(f"Error sending message in honey pot channel: {e}")
     await interaction.response.send_message(
-        f"Honey pot channel set to {channel.mention}.",
+        f"Honey pot channel set to {channel.mention}. Alerts forwarded to {mod_channel.mention if mod_channel else 'none'}.",
         ephemeral=True,
     )
