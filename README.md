@@ -14,4 +14,4 @@ Only Discord Bot You Need (i guess...) ~ 萌え萌えキュン ♡ (⸝⸝> ᴗ�
 
 For all the server configurations, it uses file based configuration (a JSON file). Which means, it is more likely to get deleted when you host the bot on an actual server. For example, when you update/deploy new version, etc. Regardless, Feel free to change, host the project/bot.
 
-I am hosting (or really "running") the original bot on my phone using "Termux". Please consider supporting me here on [ko-fi](https://ko-fi.com/cheapnightbot). And If you would like to use the original bot, you can invite it using the following link: https://discord.com/oauth2/authorize?client_id=1326853669089574952
+I am hosting (or really "running") the original bot on my phone using "Termux". Please consider supporting me on [ko-fi](https://ko-fi.com/cheapnightbot). And If you would like to use the original bot, you can invite it using the following link: https://discord.com/oauth2/authorize?client_id=1326853669089574952
