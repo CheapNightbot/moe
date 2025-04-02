@@ -125,15 +125,9 @@ class MyClient(discord.Client):
                             "bot": "Beep boop-... ~ {member.mention} just disappeared ! <:that_hurts:1355670982190432296>",
                         },
                     },
-                    "reaction_roles": {},
-                    "honey_pot": {},  # <-- Initialize honey pot config as empty
                 }
                 save_config(guild_config)
-            else:
-                # If the guild is already in the config but missing honey_pot, add it.
-                if "honey_pot" not in guild_config[str(guild.id)]:
-                    guild_config[str(guild.id)]["honey_pot"] = {}
-                    save_config(guild_config)
+
             await self.notify_missing_channels(guild)
 
         # Update guild count immediately on startup
@@ -162,14 +156,9 @@ class MyClient(discord.Client):
                         "bot": "Beep boop-... ~ {member.mention} just disappeared ! <:that_hurts:1355670982190432296>",
                     },
                 },
-                "reaction_roles": {},
-                "honey_pot": {},  # <-- Initialize honey pot config on guild join
             }
             save_config(guild_config)
-        else:
-            if "honey_pot" not in guild_config[str(guild.id)]:
-                guild_config[str(guild.id)]["honey_pot"] = {}
-                save_config(guild_config)
+
         await self.notify_missing_channels(guild)
 
     async def notify_missing_channels(self, guild: discord.Guild):
@@ -193,7 +182,7 @@ class MyClient(discord.Client):
                 return
         # Otherwise, send warning message.
         message = (
-            "Hello! It seems that no system channel was found, and no welcome/goodbye channels are set.\n\n"
+            "Heyo ~ ! It seems that no system channel was found, and no welcome/goodbye channels are set.\n\n"
             "Please set the system channel from **Server Settings -> Engagement -> System Message Channel** "
             "or use `/set_welcome_channel` and/or `/set_goodbye_channel` commands to configure them."
         )
@@ -227,6 +216,7 @@ class MyClient(discord.Client):
         welcome_config = config.get("welcome_channel", {})
         channel_id = welcome_config.get("channel_id")
         channel = self.get_channel(channel_id)
+        auto_bot_roles = config.get("auto_bot_roles", [])
 
         if channel:
             await member.display_avatar.save("./assets/user_pfp.png")
@@ -234,6 +224,11 @@ class MyClient(discord.Client):
             template = welcome_config.get("message_template", {})
             msg = template.get("bot" if member.bot else "user", "Welcome!")
             await channel.send(msg.format(member=member), file=img)
+
+            if member.bot and auto_bot_roles:
+                guild = self.get_guild(member.guild.id)
+                for role in auto_bot_roles:
+                    await member.add_roles(guild.get_role(role))
 
     async def on_member_remove(self, member: discord.Member):
         guild_id = str(member.guild.id)
@@ -298,7 +293,6 @@ class MyClient(discord.Client):
             save_config(guild_config)
 
     async def on_message(self, message: discord.Message):
-        # ...existing code...
         if message.author.bot or not message.guild:
             return
         honey = guild_config.get(str(message.guild.id), {}).get("honey_pot")
@@ -307,8 +301,6 @@ class MyClient(discord.Client):
             if allow_owner and message.author.id == message.guild.owner_id:
                 return
             try:
-                # Delete message
-                await message.delete()
                 # Ban the user
                 await message.guild.ban(message.author, reason="Honey pot triggered")
                 # Forward message details to moderation channel if configured
@@ -335,6 +327,8 @@ class MyClient(discord.Client):
                             text=f"User ID: {message.author.id} | Channel ID: {message.channel.id}"
                         )
                         await mod_channel.send(embed=embed)
+                # Delete message
+                await message.delete()
             except Exception as e:
                 print(f"Error handling honey pot for {message.author}: {e}")
         # ...existing code...
@@ -343,7 +337,7 @@ class MyClient(discord.Client):
         config = guild_config.get(str(channel.guild.id), {})
         honey = config.get("honey_pot")
         if honey and honey.get("channel_id") == channel.id:
-            config["honey_pot"] = {}  # Reset honey pot config instead of removing it
+            del config["honey_pot"]
             save_config(guild_config)
 
 
@@ -433,9 +427,8 @@ class ReactionRoleMainView(View):
     async def manage_reaction_roles(
         self, interaction: discord.Interaction, button: Button
     ):
-        # Removed management input functionality.
         await interaction.response.edit_message(
-            content="Reaction role management is not implemented yet. Please try again later.",
+            content="Reaction role management is not implemented yet. Please try again later.\n\n**BUT**, you can simply delete the reaction role message sent by me to remove associated reaction roles.",
             view=None,
         )
 
@@ -512,12 +505,15 @@ class ReactionRoleChannelSelectView(View):
             min_values=1,
             max_values=1,
         )
-        self.channel_select.callback = self.channel_selected_callback
-        self.add_item(self.channel_select)
-        # Removed previously added cancel button from __init__
+        self.cancel_button = Button(label="Cancel", style=discord.ButtonStyle.danger)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-    async def cancel(self, interaction: discord.Interaction, button: Button):
+        self.channel_select.callback = self.channel_selected_callback
+        self.cancel_button.callback = self.cancel_callback
+
+        self.add_item(self.channel_select)
+        self.add_item(self.cancel_button)
+
+    async def cancel_callback(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
             content="Reaction role creation canceled.",
             view=None,
@@ -552,12 +548,15 @@ class ReactionRoleRoleSelectView(View):
             min_values=1,
             max_values=1,
         )
-        self.role_select.callback = self.role_selected_callback
-        self.add_item(self.role_select)
-        # Cancel button via decorated method remains.
+        self.cancel_button = Button(label="Cancel", style=discord.ButtonStyle.danger)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-    async def cancel(self, interaction: discord.Interaction, button: Button):
+        self.role_select.callback = self.role_selected_callback
+        self.cancel_button.callback = self.cancel_callback
+
+        self.add_item(self.role_select)
+        self.add_item(self.cancel_button)
+
+    async def cancel_callback(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
             content="Reaction role creation canceled.",
             view=None,
@@ -565,12 +564,28 @@ class ReactionRoleRoleSelectView(View):
 
     async def role_selected_callback(self, interaction: discord.Interaction):
         if not self.role_select.values:
+            view = ReactionRoleRoleSelectView(
+                message_content="No role selected. Please try again",
+                channel_id=self.channel_id,
+                accum=self.accum,
+            )
             await interaction.response.edit_message(
-                content="No role selected. Please try again.", view=None
+                content="No role selected. Please try again.", view=view
             )
             return
         # Use role ID as int then convert to str for saving later.
         role_id = str(self.role_select.values[0].id)
+        if role_id in list(self.accum.values()):
+            view = ReactionRoleRoleSelectView(
+                message_content="You already selected this role! Please select another role.",
+                channel_id=self.channel_id,
+                accum=self.accum,
+            )
+            await interaction.response.edit_message(
+                content="You already selected this role! Please select another role.", view=view
+            )
+            return
+
         await interaction.response.edit_message(
             content=f"Role selected: <@&{role_id}>.\nPlease react to *this message* with the emoji you want to associate.",
             view=None,
@@ -585,6 +600,7 @@ class ReactionRoleRoleSelectView(View):
 
         try:
             reaction, _ = await client.wait_for("reaction_add", check=check, timeout=60)
+            await interaction.message.clear_reactions()
             emoji = reaction.emoji
             # Use str(emoji) as JSON key.
             emoji_key = str(emoji)
@@ -595,9 +611,13 @@ class ReactionRoleRoleSelectView(View):
                 view = ReactionRoleSummaryView(
                     self.message_content, self.channel_id, accum=self.accum
                 )
+
+                emoji_role_pairs = ""
+                for emoji, role in self.accum.items():
+                    emoji_role_pairs += f"\n{emoji} - <@&{role}>"
                 await interaction.followup.edit_message(
                     message_id=interaction.message.id,
-                    content=f"Emoji-role pair added: <@&{role_id}> - {emoji}.",
+                    content=f"Emoji-role pair(s) added:\n{emoji_role_pairs}",
                     view=view,
                 )
             else:
@@ -680,14 +700,20 @@ class ReactionRoleSummaryView(View):
             view=None,
         )
 
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
+    async def cancel(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.edit_message(
+            content="Reaction role creation canceled.",
+            view=None,
+        )
 
-# New modal for updating message templates via a form with placeholder guides added in input placeholders
+
+# Modal for updating message templates via a form with placeholder guides added in input placeholders
 class TemplateUpdateModal(Modal, title="Update Message Template"):
     def __init__(self, guild_id: str, template_type: str):
         super().__init__()
         self.guild_id = guild_id
         self.template_type = template_type  # "welcome_channel" or "goodbye_channel"
-        # Remove storing original_message_id since we won't edit it later.
         curr_conf = guild_config.get(guild_id, {}).get(template_type, {})
         current_user = curr_conf.get("message_template", {}).get("user", "")
         current_bot = curr_conf.get("message_template", {}).get("bot", "")
@@ -742,7 +768,7 @@ class TemplateUpdateModal(Modal, title="Update Message Template"):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-# New view to show current template guide and a button to edit it
+# View to show current template guide and a button to edit it
 class TemplateEditView(View):
     def __init__(self, guild_id: str, template_type: str):
         super().__init__(timeout=300)
@@ -757,7 +783,6 @@ class TemplateEditView(View):
         await interaction.response.send_modal(modal)
 
 
-# Updated slash command with parameter renamed to "type"
 @client.tree.command(
     name="message_template",
     description="Customize your server's welcome or goodbye message.",
@@ -797,13 +822,6 @@ async def message_template(
     )
     view = TemplateEditView(guild_id=guild_id, template_type=template_type)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-
-
-def run_bot_with_event(ready_event, client):
-    log()
-    bot = client
-    bot.ready_event = ready_event
-    bot.run(TOKEN, log_handler=None)
 
 
 @client.tree.command(
@@ -884,6 +902,8 @@ async def honey_pot(
     guild_id = str(interaction.guild.id)
     if guild_id not in guild_config:
         guild_config[guild_id] = {}
+    if "honey_pot" not in guild_config[str(guild_id)]:
+        guild_config[str(guild_id)]["honey_pot"] = {}
     guild_config[guild_id]["honey_pot"] = {
         "channel_id": channel.id,
         "allow_owner": allow_owner,
@@ -892,7 +912,7 @@ async def honey_pot(
     save_config(guild_config)
     try:
         await channel.send(
-            "# <a:warn:1355807146851176519> DO NOT POST HERE <a:warn:1355807146851176519>\n\n\n"
+            "# <a:warn:1355807146851176519>DO NOT POST HERE<a:warn:1355807146851176519>\n\n\n"
             "This channel is a honeypot for compromised accounts. If you send anything here, "
             "you WILL BE BANNED immediately.\n\nYes, I AM SERIOUS ~ <:ganyu_huh:1355807607075373056> !!"
         )
@@ -902,3 +922,158 @@ async def honey_pot(
         f"Honey pot channel set to {channel.mention}. Alerts forwarded to {mod_channel.mention if mod_channel else 'none'}.",
         ephemeral=True,
     )
+
+
+@client.tree.command(
+    name="auto_roles",
+    description="Automatically assign role(s) to users or bot users on join.",
+)
+@app_commands.describe(type="Choose which user type to assign roles automatically.")
+@app_commands.choices(
+    type=[
+        app_commands.Choice(name="Bot", value="bots"),
+        app_commands.Choice(name="User", value="users"),
+    ]
+)
+@app_commands.check(owner_only)
+async def auto_bot_role(
+    interaction: discord.Interaction, type: app_commands.Choice[str]
+):
+    guild_id = str(interaction.guild.id)
+    user_type = type.value
+    curr_conf = guild_config.get(guild_id, {}).get("auto_roles", {})
+    current_user_roles = curr_conf.get("users", [])
+    current_bot_roles = curr_conf.get("bots", [])
+
+    view = AutobotRoleSelectView(
+        message_content=f"Select roles to automatically assign to {user_type} when they join the server:",
+        channel_id=interaction.channel.id,
+        user_type=user_type,
+        accum={"users": current_user_roles, "bots": current_bot_roles},
+    )
+    await interaction.response.send_message(
+        f"Select a role to automatically assign to {user_type} when they join the server:",
+        view=view,
+        ephemeral=True,
+    )
+
+
+class AutobotRoleSelectView(View):
+    def __init__(self, message_content, channel_id, user_type, accum=None):
+        super().__init__(timeout=300)
+        self.message_content = message_content
+        self.channel_id = channel_id
+        self.user_type = user_type
+        self.accum = accum if accum is not None else {"users": [], "bots": []}
+        self.role_select = RoleSelect(
+            placeholder="Select a role",
+            min_values=1,
+            max_values=1,
+        )
+        self.cancel_button = Button(label="Cancel", style=discord.ButtonStyle.danger)
+
+        self.role_select.callback = self.role_selected_callback
+        self.cancel_button.callback = self.cancel_callback
+
+        self.add_item(self.role_select)
+        self.add_item(self.cancel_button)
+
+    async def cancel_callback(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(
+            content="Auto roles creation canceled.",
+            view=None,
+        )
+
+    async def role_selected_callback(self, interaction: discord.Interaction):
+        if not self.role_select.values:
+            view = AutobotRoleSelectView(
+                message_content=f"Select roles to automatically assign to {self.user_type} when they join the server:",
+                channel_id=interaction.channel.id,
+                user_type=self.user_type,
+                accum=self.accum,
+            )
+            await interaction.response.edit_message(
+                content="No role selected. Please try again.", view=view
+            )
+            return
+
+        role_id = self.role_select.values[0].id
+        if role_id in self.accum[self.user_type]:
+            view = AutobotRoleSelectView(
+                message_content=f"This role has already been assigned to `{self.user_type}`. Please choose another role:",
+                channel_id=interaction.channel.id,
+                user_type=self.user_type,
+                accum=self.accum,
+            )
+            await interaction.response.edit_message(
+                content=f"This role has already been assigned to `{self.user_type}`. Please choose another role:",
+                view=view,
+            )
+            return
+
+        self.accum[self.user_type].append(role_id)
+
+        selected_roles = ""
+        for role in self.accum[self.user_type]:
+            selected_roles += f"\n<@&{role}>"
+
+        # Now pass the updated accum to the summary view.
+        view = AutobotRoleSummaryView(
+            self.message_content,
+            self.channel_id,
+            user_type=self.user_type,
+            accum=self.accum,
+        )
+        await interaction.response.edit_message(
+            content=f"Following role(s) are selected for `{self.user_type}`:\n{selected_roles}",
+            view=view,
+        )
+
+
+class AutobotRoleSummaryView(View):
+    def __init__(self, message_content, channel_id, user_type, accum):
+        super().__init__(timeout=300)
+        self.message_content = message_content
+        self.channel_id = channel_id
+        self.user_type = user_type
+        self.accum = accum  # This dictionary stores role_ids for users and bots
+
+    @discord.ui.button(label="Add More Roles", style=discord.ButtonStyle.primary)
+    async def add_more_roles(self, interaction: discord.Interaction, button: Button):
+        # Pass the current accumulator forward.
+        view = AutobotRoleSelectView(
+            self.message_content,
+            self.channel_id,
+            user_type=self.user_type,
+            accum=self.accum,
+        )
+        await interaction.response.edit_message(
+            content=f"Select another role to automatically assign {self.user_type} when they join the server:",
+            view=view,
+        )
+
+    @discord.ui.button(label="Finish", style=discord.ButtonStyle.success)
+    async def finish(self, interaction: discord.Interaction, button: Button):
+        guild_id = str(interaction.guild_id)
+        if guild_id not in guild_config:
+            guild_config[guild_id] = {"auto_roles": {}}
+        guild_config[guild_id]["auto_roles"] = self.accum
+        save_config(guild_config)
+        await interaction.response.edit_message(
+            content="Auto role(s) configured successfully.",
+            view=None,
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
+    async def cancel(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.edit_message(
+            content="Auto bot role creation canceled.",
+            view=None,
+        )
+
+
+def run_bot_with_event(ready_event, client):
+    log()
+    bot = client
+    bot.ready_event = ready_event
+    bot.run(TOKEN, log_handler=None)

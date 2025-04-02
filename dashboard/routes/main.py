@@ -1,11 +1,12 @@
 from flask import Blueprint, render_template, jsonify
-from config.shared import bot_stats # Import shared variables
+from config.shared import bot_stats  # Import shared variables
 from datetime import datetime
 from dashboard.app import socketio  # Use the socketio instance from app.py
 
 main_bp = Blueprint("main", __name__)
 
 bot_start_time = datetime.now()
+bot_invite_link = "https://discord.com/oauth2/authorize?client_id=1326853669089574952"
 
 
 @main_bp.route("/")
@@ -23,7 +24,8 @@ def index():
         title="Moe Bot",
         guild_count=guild_count,
         uptime=uptime_str,
-        year=datetime.now().year
+        bot_invite_link=bot_invite_link,
+        year=datetime.now().year,
     )
 
 
