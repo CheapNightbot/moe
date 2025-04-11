@@ -1,8 +1,11 @@
-from bot.main import run_bot_with_event, client  # Import directly from bot.main
-from dashboard.app import app, socketio  # Import socketio from app.py
-from config.shared import bot_stats
 import multiprocessing
+
 from waitress import serve
+
+from bot.main import client  # Import directly from bot.main
+from bot.main import run_bot_with_event
+from config.shared import bot_stats
+from dashboard.app import app, socketio  # Import socketio from app.py
 
 # Create an event to signal when the bot is ready
 bot_ready_event = multiprocessing.Event()
@@ -18,8 +21,9 @@ def run_dashboard():
     dashboard_stats.clear()
     dashboard_stats.update(bot_stats)
 
+    print("Dashboard is running: http://127.0.0.1:8000")
     # Use Waitress to serve the Flask app securely
-    serve(app, host="0.0.0.0", port=10000, threads=4)  # Use 4 threads for concurrency
+    serve(app, host="0.0.0.0", port=8000, threads=4)  # Use 4 threads for concurrency
 
 
 if __name__ == "__main__":
