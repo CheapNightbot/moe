@@ -399,11 +399,7 @@ async def greetings(interaction: discord.Interaction, action: app_commands.Choic
     )
 
 
-@client.tree.command(
-    name="greet_member",
-    description="Manually greet a member who joined the server while the bot was offline.",
-)
-@app_commands.describe(member="The member to greet.")
+@client.tree.context_menu(name="greet_member")
 @app_commands.check(owner_only)
 async def greet_member(interaction: discord.Interaction, member: discord.Member):
     guild_id = str(interaction.guild_id)
