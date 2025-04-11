@@ -372,7 +372,7 @@ client = MyClient(bot_stats, intents, activity)
 @client.tree.command(name="ping", description="Check the bot's response time.")
 async def ping(interaction: discord.Interaction):
     latency = round(client.latency * 1000)  # Convert to milliseconds
-    await interaction.response.send_message(f"Pong! 🏓 | Response time: {latency}ms")
+    await interaction.response.send_message(f"Pong! 🏓 | Response time: {latency}ms", ephemeral=True)
 
 
 @client.tree.command(
@@ -394,7 +394,8 @@ async def greetings(interaction: discord.Interaction, action: app_commands.Choic
         save_config(guild_config)
 
     await interaction.response.send_message(
-        f"Greeting messages has been {action.name.lower()}d."
+        f"Greeting messages has been {action.name.lower()}d.",
+        ephemeral=True
     )
 
 
