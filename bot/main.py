@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from bot.utils.greet import create_banner
 from bot.utils.logger import log
 from config.shared import bot_stats  # Import shared variables
+from typing import Literal
 
 load_dotenv()
 
@@ -107,6 +108,7 @@ class MyClient(discord.Client):
         for guild in self.guilds:
             if str(guild.id) not in guild_config:
                 guild_config[str(guild.id)] = {
+                    "greetings": True,
                     "welcome_channel": {
                         "channel_id": (
                             guild.system_channel.id if guild.system_channel else None
@@ -138,6 +140,7 @@ class MyClient(discord.Client):
         self.stats["guild_count"] = len(self.guilds)
         if str(guild.id) not in guild_config:
             guild_config[str(guild.id)] = {
+                "greetings": True,
                 "welcome_channel": {
                     "channel_id": (
                         guild.system_channel.id if guild.system_channel else None
@@ -184,7 +187,8 @@ class MyClient(discord.Client):
         message = (
             "Heyo ~ ! It seems that no system channel was found, and no welcome/goodbye channels are set.\n\n"
             "Please set the system channel from **Server Settings -> Engagement -> System Message Channel** "
-            "or use `/set_welcome_channel` and/or `/set_goodbye_channel` commands to configure them."
+            "or use `/set_welcome_channel` and/or `/set_goodbye_channel` commands to configure them.\n\n"
+            "If you would like to disable these greetings, you can use `/greetings` command and select `Disable` option."
         )
         if guild.system_channel:
             await guild.system_channel.send(message)
@@ -213,6 +217,10 @@ class MyClient(discord.Client):
     async def on_member_join(self, member: discord.Member):
         guild_id = str(member.guild.id)
         config = guild_config.get(guild_id, {})
+
+        if not config.get("greetings"):
+            return
+
         welcome_config = config.get("welcome_channel", {})
         channel_id = welcome_config.get("channel_id")
         channel = self.get_channel(channel_id)
@@ -233,6 +241,10 @@ class MyClient(discord.Client):
     async def on_member_remove(self, member: discord.Member):
         guild_id = str(member.guild.id)
         config = guild_config.get(guild_id, {})
+
+        if not config.get("greetings"):
+            return
+
         goodbye_config = config.get("goodbye_channel", {})
         channel_id = goodbye_config.get("channel_id")
         channel = self.get_channel(channel_id)
@@ -355,6 +367,23 @@ async def ping(interaction: discord.Interaction):
     latency = round(client.latency * 1000)  # Convert to milliseconds
     await interaction.response.send_message(f"Pong! 🏓 | Response time: {latency}ms")
 
+
+@client.tree.command(name="greetings", description="Enable or Disable welcome and goodbye messages sent when a member joins the server.")
+@app_commands.describe(action="Enable or Disable welcome and goodbye greetings.")
+@app_commands.choices(
+    action=[
+        app_commands.Choice(name="Enable", value="true"),
+        app_commands.Choice(name="Disable", value="false"),
+    ]
+)
+@app_commands.check(owner_only)
+async def greetings(interaction: discord.Interaction, action: app_commands.Choice[str]):
+    guild_id = str(interaction.guild_id)
+    if guild_id in guild_config:
+        guild_config[guild_id]["greetings"] = True if action.value == "true" else False
+        save_config(guild_config)
+
+    await interaction.response.send_message(f"Greeting messages has been {action.name.lower()}d.")
 
 @client.tree.command(
     name="set_welcome_channel",
