@@ -1,11 +1,15 @@
 import multiprocessing
+import os
 
+from dotenv import load_dotenv
 from waitress import serve
 
 from bot.main import client  # Import directly from bot.main
 from bot.main import run_bot_with_event
 from config.shared import bot_stats
 from dashboard.app import app, socketio  # Import socketio from app.py
+
+load_dotenv()
 
 # Create an event to signal when the bot is ready
 bot_ready_event = multiprocessing.Event()
@@ -31,10 +35,19 @@ if __name__ == "__main__":
     bot_process = multiprocessing.Process(
         target=run_bot_with_event, args=(bot_ready_event, client)
     )
-    dashboard_process = multiprocessing.Process(target=run_dashboard)
+
+    dashboard_process = None
+
+    # Check the environment variable to decide whether to run the dashboard
+    if os.getenv("DASHBOARD", "False").lower() == "true":
+        dashboard_process = multiprocessing.Process(target=run_dashboard)
 
     bot_process.start()
-    dashboard_process.start()
+
+    if dashboard_process is not None:
+        dashboard_process.start()
 
     bot_process.join()
-    dashboard_process.join()
+
+    if dashboard_process is not None:
+        dashboard_process.join()
