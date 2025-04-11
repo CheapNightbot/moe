@@ -224,7 +224,9 @@ class MyClient(discord.Client):
         welcome_config = config.get("welcome_channel", {})
         channel_id = welcome_config.get("channel_id")
         channel = self.get_channel(channel_id)
-        auto_bot_roles = config.get("auto_bot_roles", [])
+        auto_roles = config.get("auto_roles", {})
+        user_auto_roles = auto_roles.get("users", [])
+        bot_auto_roles = auto_roles.get("bots", [])
 
         if channel:
             await member.display_avatar.save("./assets/user_pfp.png")
@@ -233,9 +235,14 @@ class MyClient(discord.Client):
             msg = template.get("bot" if member.bot else "user", "Welcome!")
             await channel.send(msg.format(member=member), file=img)
 
-            if member.bot and auto_bot_roles:
-                guild = self.get_guild(member.guild.id)
-                for role in auto_bot_roles:
+            guild = self.get_guild(member.guild.id)
+
+            if not member.bot and user_auto_roles:
+                for role in user_auto_roles:
+                    await member.add_roles(guild.get_role(role))
+
+            if member.bot and bot_auto_roles:
+                for role in bot_auto_roles:
                     await member.add_roles(guild.get_role(role))
 
     async def on_member_remove(self, member: discord.Member):
@@ -389,6 +396,56 @@ async def greetings(interaction: discord.Interaction, action: app_commands.Choic
     await interaction.response.send_message(
         f"Greeting messages has been {action.name.lower()}d."
     )
+
+
+@client.tree.command(
+    name="greet_member",
+    description="Manually greet a member who joined the server while the bot was offline.",
+)
+@app_commands.describe(member="The member to greet.")
+@app_commands.check(owner_only)
+async def greet_member(interaction: discord.Interaction, member: discord.Member):
+    guild_id = str(interaction.guild_id)
+    config = guild_config.get(guild_id, {})
+
+    if not config.get("greetings"):
+        await interaction.response.send_message(
+            "Greetings are disabled for this server."
+        )
+
+    welcome_config = config.get("welcome_channel", {})
+    channel_id = welcome_config.get("channel_id")
+    channel = client.get_channel(channel_id)
+    auto_roles = config.get("auto_roles", {})
+    user_auto_roles = auto_roles.get("users", [])
+    bot_auto_roles = auto_roles.get("bots", [])
+
+    if channel:
+        await interaction.response.send_message(
+            f"Greeted {member.mention} successfully!\nIt may take some time for me to send message.",
+            ephemeral=True,
+        )
+
+        await member.display_avatar.save("./assets/user_pfp.png")
+        img = discord.File(create_banner(member.display_name))
+        template = welcome_config.get("message_template", {})
+        msg = template.get("bot" if member.bot else "user", "Welcome!")
+        await channel.send(msg.format(member=member, guild=interaction.guild), file=img)
+
+        guild = interaction.guild
+
+        if not member.bot and user_auto_roles:
+            for role in user_auto_roles:
+                await member.add_roles(guild.get_role(role))
+
+        if member.bot and bot_auto_roles:
+            for role in bot_auto_roles:
+                await member.add_roles(guild.get_role(role))
+
+    else:
+        await interaction.response.send_message(
+            "Could not find the welcome channel.", ephemeral=True
+        )
 
 
 @client.tree.command(
