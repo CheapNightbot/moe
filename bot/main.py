@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 from multiprocessing import Manager
+from typing import Literal
 
 import discord
 from discord import Embed, app_commands
@@ -12,7 +13,6 @@ from dotenv import load_dotenv
 from bot.utils.greet import create_banner
 from bot.utils.logger import log
 from config.shared import bot_stats  # Import shared variables
-from typing import Literal
 
 load_dotenv()
 
@@ -368,7 +368,10 @@ async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(f"Pong! 🏓 | Response time: {latency}ms")
 
 
-@client.tree.command(name="greetings", description="Enable or Disable welcome and goodbye messages sent when a member joins the server.")
+@client.tree.command(
+    name="greetings",
+    description="Enable or Disable welcome and goodbye messages sent when a member joins the server.",
+)
 @app_commands.describe(action="Enable or Disable welcome and goodbye greetings.")
 @app_commands.choices(
     action=[
@@ -383,7 +386,10 @@ async def greetings(interaction: discord.Interaction, action: app_commands.Choic
         guild_config[guild_id]["greetings"] = True if action.value == "true" else False
         save_config(guild_config)
 
-    await interaction.response.send_message(f"Greeting messages has been {action.name.lower()}d.")
+    await interaction.response.send_message(
+        f"Greeting messages has been {action.name.lower()}d."
+    )
+
 
 @client.tree.command(
     name="set_welcome_channel",
@@ -611,7 +617,8 @@ class ReactionRoleRoleSelectView(View):
                 accum=self.accum,
             )
             await interaction.response.edit_message(
-                content="You already selected this role! Please select another role.", view=view
+                content="You already selected this role! Please select another role.",
+                view=view,
             )
             return
 
