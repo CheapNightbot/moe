@@ -350,7 +350,6 @@ class MyClient(discord.Client):
                 await message.delete()
             except Exception as e:
                 print(f"Error handling honey pot for {message.author}: {e}")
-        # ...existing code...
 
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         config = guild_config.get(str(channel.guild.id), {})
@@ -517,16 +516,274 @@ class ReactionRoleMainView(View):
     async def manage_reaction_roles(
         self, interaction: discord.Interaction, button: Button
     ):
+        guid_id = str(interaction.guild_id)
+        config = guild_config.get(guid_id, {})
+        reaction_roles_ = config.get("reaction_roles", {})
+
+        if not reaction_roles_ or not any(reaction_roles_.values()):
+            await interaction.response.edit_message(
+                content="No reaction roles are currently set.",
+                view=None,
+            )
+            return
+
+        # Flatten all messages into a list of (channel_id, message_id)
+        rr_list = []
+        for channel_id, messages in reaction_roles_.items():
+            for msg_id in messages:
+                rr_list.append((channel_id, msg_id))
+
         await interaction.response.edit_message(
-            content="Reaction role management is not implemented yet. Please try again later.\n\n**BUT**, you can simply delete the reaction role message sent by me to remove associated reaction roles.",
-            view=None,
+            content="Select a reaction role message to manage:",
+            view=ReactionRoleListView(rr_list),
         )
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-    async def cancel(self, interaction: discord.Interaction, button: Button):
+
+class ReactionRoleListView(View):
+    def __init__(self, rr_list):
+        super().__init__(timeout=300)
+        self.rr_list = rr_list
+        for channel_id, msg_id in rr_list:
+            # Set label at creation time
+            label = self._get_label(channel_id, msg_id)
+            self.add_item(ReactionRoleMessageButton(channel_id, msg_id, label=label))
+
+    def _get_label(self, channel_id, msg_id):
+        # Try to get channel name and message preview from config
+        channel_name = f"#{channel_id}"
+        preview = ""
+        # Try to get channel name from the global client if possible
+        channel = None
+        try:
+            # This import is safe here because client is defined globally
+            from __main__ import client
+
+            for guild in client.guilds:
+                ch = guild.get_channel(int(channel_id))
+                if ch:
+                    channel = ch
+                    break
+        except Exception:
+            pass
+        if channel and hasattr(channel, "name"):
+            channel_name = f"#{channel.name}"
+        # Try to get preview from config
+        for guild_id, config in guild_config.items():
+            rrdata = (
+                config.get("reaction_roles", {}).get(channel_id, {}).get(msg_id, {})
+            )
+            msg_content = rrdata.get("_raw_content")
+            if msg_content:
+                try:
+                    data = json.loads(msg_content)
+                    if isinstance(data, dict):
+                        if data.get("content"):
+                            preview = data["content"][:40]
+                        elif (
+                            data.get("embeds")
+                            and isinstance(data["embeds"], list)
+                            and data["embeds"]
+                        ):
+                            embed = data["embeds"][0]
+                            preview = embed.get("title", "")[:40]
+                    else:
+                        preview = str(data)[:40]
+                except Exception:
+                    preview = str(msg_content)[:40]
+                break
+        if not preview:
+            preview = "(no content)"
+        return f"{channel_name}: {preview}"
+
+
+class ReactionRoleMessageButton(Button):
+    def __init__(self, channel_id, msg_id, label=None):
+        super().__init__(
+            label=label or "Loading...",
+            style=discord.ButtonStyle.secondary,
+            custom_id=f"rrmsg_{channel_id}_{msg_id}",
+        )
+        self.channel_id = channel_id
+        self.msg_id = msg_id
+
+    async def callback(self, interaction: discord.Interaction):
+        channel = interaction.guild.get_channel(int(self.channel_id))
+        if not channel:
+            await interaction.response.send_message(
+                "Channel not found.", ephemeral=True
+            )
+            return
+        # Try to get preview from config
+        preview = ""
+        guid_id = str(interaction.guild_id)
+        config = guild_config.get(guid_id, {})
+        rrdata = (
+            config.get("reaction_roles", {})
+            .get(self.channel_id, {})
+            .get(self.msg_id, {})
+        )
+        msg_content = rrdata.get("_raw_content")
+        if msg_content:
+            try:
+                data = json.loads(msg_content)
+                if isinstance(data, dict):
+                    if data.get("content"):
+                        preview = data["content"][:40]
+                    elif (
+                        data.get("embeds")
+                        and isinstance(data["embeds"], list)
+                        and data["embeds"]
+                    ):
+                        embed = data["embeds"][0]
+                        preview = embed.get("title", "")[:40]
+                else:
+                    preview = str(data)[:40]
+            except Exception:
+                preview = str(msg_content)[:40]
+        else:
+            try:
+                msg = await channel.fetch_message(int(self.msg_id))
+                if msg.content:
+                    preview = msg.content[:40]
+                elif msg.embeds:
+                    preview = (
+                        msg.embeds[0].title[:40] if msg.embeds[0].title else "(embed)"
+                    )
+                else:
+                    preview = "(no content)"
+            except Exception:
+                preview = "(unavailable)"
+        channel_name = (
+            f"#{channel.name}" if hasattr(channel, "name") else f"#{self.channel_id}"
+        )
+        self.label = f"{channel_name}: {preview}"
         await interaction.response.edit_message(
-            content="Reaction role creation canceled.",
-            view=None,
+            content=f"Selected message in <#{self.channel_id}> ([Jump](https://discord.com/channels/{interaction.guild.id}/{self.channel_id}/{self.msg_id})).\nWhat would you like to do?",
+            view=ReactionRoleEditView(self.channel_id, self.msg_id),
+        )
+
+
+class ReactionRoleEditView(View):
+    def __init__(self, channel_id, msg_id):
+        super().__init__(timeout=300)
+        self.channel_id = channel_id
+        self.msg_id = msg_id
+
+    @discord.ui.button(label="Edit Message", style=discord.ButtonStyle.primary, row=0)
+    async def edit(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_modal(
+            ReactionRoleEditModal(self.channel_id, self.msg_id)
+        )
+
+    @discord.ui.button(label="Delete Message", style=discord.ButtonStyle.danger, row=0)
+    async def delete(self, interaction: discord.Interaction, button: Button):
+        channel = interaction.guild.get_channel(int(self.channel_id))
+        if not channel:
+            await interaction.response.send_message(
+                "Channel not found.", ephemeral=True
+            )
+            return
+        try:
+            msg = await channel.fetch_message(int(self.msg_id))
+            await msg.delete()
+        except Exception:
+            await interaction.response.send_message(
+                "Message not found or already deleted.", ephemeral=True
+            )
+            return
+        # Remove from config
+        guid_id = str(interaction.guild_id)
+        if guid_id in guild_config:
+            rr = guild_config[guid_id].get("reaction_roles", {})
+            if self.channel_id in rr and self.msg_id in rr[self.channel_id]:
+                del rr[self.channel_id][self.msg_id]
+                if not rr[self.channel_id]:
+                    del rr[self.channel_id]
+                save_config(guild_config)
+        await interaction.response.edit_message(
+            content="Reaction role message deleted.", view=None
+        )
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, button: Button):
+        guid_id = str(interaction.guild_id)
+        config = guild_config.get(guid_id, {})
+        reaction_roles_ = config.get("reaction_roles", {})
+        rr_list = []
+        for channel_id, messages in reaction_roles_.items():
+            for msg_id in messages:
+                rr_list.append((channel_id, msg_id))
+        await interaction.response.edit_message(
+            content="Select a reaction role message to manage:",
+            view=ReactionRoleListView(rr_list),
+        )
+
+
+class ReactionRoleEditModal(Modal, title="Edit Reaction Role Message"):
+    def __init__(self, channel_id, msg_id):
+        super().__init__()
+        self.channel_id = channel_id
+        self.msg_id = msg_id
+        # Load the saved message content from config
+        self.default_content = ""
+        for guild_id, config in guild_config.items():
+            rr = config.get("reaction_roles", {}).get(channel_id, {})
+            if (
+                msg_id in rr
+                and isinstance(rr[msg_id], dict)
+                and rr[msg_id].get("_raw_content")
+            ):
+                self.default_content = rr[msg_id]["_raw_content"]
+                break
+        self.message_input = TextInput(
+            label="Message Content",
+            placeholder="Enter plain text (Markdown supported) or paste JSON from Discohook's JSON Data Editor.",
+            style=discord.TextStyle.paragraph,
+            required=True,
+            default=self.default_content[:4000] if self.default_content else None,
+        )
+        self.add_item(self.message_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        content_raw = self.message_input.value.strip()
+        try:
+            data = json.loads(content_raw)
+            content = data.get("content", None)
+            embeds_data = data.get("embeds", [])
+            embed = (
+                Embed.from_dict(embeds_data[0])
+                if embeds_data and isinstance(embeds_data, list) and embeds_data[0]
+                else None
+            )
+        except Exception:
+            content = content_raw
+            embed = None
+        channel = interaction.guild.get_channel(int(self.channel_id))
+        if not channel:
+            await interaction.response.send_message(
+                "Channel not found.", ephemeral=True
+            )
+            return
+        try:
+            msg = await channel.fetch_message(int(self.msg_id))
+            await msg.edit(content=content, embed=embed)
+            # Save the new content to config
+            guid_id = str(interaction.guild_id)
+            if guid_id in guild_config:
+                rr = guild_config[guid_id].get("reaction_roles", {})
+                if self.channel_id in rr and self.msg_id in rr[self.channel_id]:
+                    if isinstance(rr[self.channel_id][self.msg_id], dict):
+                        rr[self.channel_id][self.msg_id]["_raw_content"] = content_raw
+                    else:
+                        rr[self.channel_id][self.msg_id] = {"_raw_content": content_raw}
+                    save_config(guild_config)
+        except Exception:
+            await interaction.response.send_message(
+                "Failed to edit message.", ephemeral=True
+            )
+            return
+        await interaction.response.edit_message(
+            content="Reaction role message updated!", view=None
         )
 
 
@@ -782,9 +1039,11 @@ class ReactionRoleSummaryView(View):
             guild_config[guild_id].setdefault("reaction_roles", {})[
                 str(self.channel_id)
             ] = {}
-        guild_config[guild_id]["reaction_roles"][str(self.channel_id)][
-            msg_id
-        ] = self.accum
+        # Save both the emoji-role mapping and the raw content
+        guild_config[guild_id]["reaction_roles"][str(self.channel_id)][msg_id] = {
+            **self.accum,
+            "_raw_content": self.message_content,
+        }
         save_config(guild_config)
         await interaction.response.edit_message(
             content=f"Reaction role message sent in <#{self.channel_id}>.",
