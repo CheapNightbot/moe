@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import random
 from multiprocessing import Manager
 from typing import Literal
 
@@ -52,12 +53,16 @@ def owner_only(interaction: discord.Interaction) -> bool:
 
 
 class MyClient(discord.Client):
-
     def __init__(self, stats, intents: discord.Intents, activity: discord.Activity):
         super().__init__(intents=intents, activity=activity)
         self.tree = app_commands.CommandTree(self)
         self.stats = stats
         self.ready_event = None
+        self.activities = [
+            (discord.ActivityType.streaming, "萌え萌えキュン ♡(⸝⸝> ᴗ•⸝⸝)"),
+            (discord.ActivityType.listening, "to cute pings! ૮₍´˶• . • ⑅ ₎ა"),
+            (discord.ActivityType.competing, "in a moe contest! ( ๑ ˃̵ᴗ˂̵)و ♡"),
+        ]
 
     async def setup_hook(self):
         # Sync slash commands
@@ -66,6 +71,22 @@ class MyClient(discord.Client):
         self.loop.create_task(self.update_stats())
         # Add a scheduled task to check reaction role integrity every 86400 seconds (1 day)
         self.loop.create_task(self.check_reaction_roles_integrity())
+        self.loop.create_task(self.cycle_activities())
+
+    async def cycle_activities(self):
+        await self.wait_until_ready()
+        while True:
+            act_type, act_name = random.choice(self.activities)
+            activity = discord.Activity(name=act_name, type=act_type)
+            # Set status based on activity type
+            if act_type == discord.ActivityType.competing:
+                status = discord.Status.dnd
+            elif act_type == discord.ActivityType.listening:
+                status = discord.Status.idle
+            else:
+                status = discord.Status.online
+            await self.change_presence(activity=activity, status=status)
+            await asyncio.sleep(30)
 
     async def check_reaction_roles_integrity(self):
         await self.wait_until_ready()
